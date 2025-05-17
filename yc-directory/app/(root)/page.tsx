@@ -1,7 +1,8 @@
 import StartupCard, { StartupCardType } from "@/components/StartupCard";
 import SearchForm from "../../components/SearchForm";
-import { client } from "@/sanity/lib/client";
 import { STARTUP_QUERY } from "@/sanity/lib/queries";
+import { sanityFetch, SanityLive } from "@/sanity/lib/live";
+import { auth } from "@/auth";
 
 export default async function Home({
   searchParams,
@@ -9,10 +10,16 @@ export default async function Home({
   searchParams: Promise<{ query?: string }>;
 }) {
   const query = (await searchParams).query;
+  const params = { search: query || null };
 
-  const posts: Array<StartupCardType> = await client.fetch(STARTUP_QUERY);
+  const session = await auth();
 
-  console.log(JSON.stringify(posts, null, 2));
+  /* Normal way to grab our data from sanity using ISR */
+  /*   const posts: Array<StartupCardType> = await client.fetch(STARTUP_QUERY); */
+
+  /* this is the modified version using Sanity Live API */
+  /* Data will be up to date whenever changes are made */
+  const { data: posts } = await sanityFetch({ query: STARTUP_QUERY, params });
 
   return (
     <>
@@ -35,7 +42,7 @@ export default async function Home({
         </p>
         <ul className="mt-7 card_grid">
           {posts.length > 0 ? (
-            posts.map((post, index) => (
+            posts.map((post: StartupCardType) => (
               <StartupCard key={post._id} post={post} />
             ))
           ) : (
@@ -43,6 +50,8 @@ export default async function Home({
           )}
         </ul>
       </section>
+
+      <SanityLive />
     </>
   );
 }
