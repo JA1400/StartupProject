@@ -17,7 +17,11 @@ const View = async ({ id }: { id: string }) => {
   const fetchPromise = client
     .withConfig({ useCdn: false })
     .fetch(STARTUP_VIEWS_QUERY, { id });
-  const incrementPromise = writeClient.patch(id).inc({ views: 1 }).commit();
+  const incrementPromise = writeClient
+    .patch(id)
+    .setIfMissing({ views: 0 })
+    .inc({ views: 1 })
+    .commit();
 
   // Wait only for the fetch to complete so we can display the current value
   const { views: totalViews } = await fetchPromise;
@@ -26,7 +30,7 @@ const View = async ({ id }: { id: string }) => {
   incrementPromise.catch((err) =>
     console.error("Failed to increment view count", err)
   );
-  
+
   return (
     <div className="view-container">
       <div className="absolute -top-2 -right-2">
